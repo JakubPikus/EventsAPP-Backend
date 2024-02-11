@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Ticket</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh; /* Ustaw minimalną wysokość na całą wysokość widoku, aby elementy były wycentrowane */
+      }
+
+      .ticket-container {
+        padding: 20px;
+        max-width: 800px; /* Ustaw maksymalną szerokość kontenera */
+        height: 100vh; /* Ustaw wysokość na całą wysokość widoku */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .event-image,
+      .qr-code {
+        text-align: center;
+        height: 1/3 * 100vh; /* Ustaw wysokość obrazka na 1/3 wysokości widoku */
+      }
+
+      .event-image img,
+      .qr-code img {
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 10px;
+      }
+
+      .ticket-info {
+        margin-bottom: 10px;
+        height: 2/3 * 100vh; /* Ustaw wysokość informacji na 2/3 wysokości widoku */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ticket-container">
+      <div class="event-image">
+        <img src="{{ event_photo }}" alt="Event Photo" />
+      </div>
+
+      <div class="ticket-info">
+        <p
+          style="
+            font-family: HYSMyeongJo-Medium;
+            font-size: 30px;
+            line-height: 1.5;
+          "
+        >
+          {{event_name}}
+        </p>
+
+        <p
+          style="
+            font-family: HYSMyeongJo-Medium;
+            font-size: 24px;
+            line-height: 1.5;
+          "
+        >
+          {{ticket_type}}
+        </p>
+
+        <p
+          style="
+            font-family: HYSMyeongJo-Medium;
+            font-size: 20px;
+            line-height: 1.5;
+          "
+        >
+          {{ticket_details}}
+        </p>
+
+        <div
+          style="
+            font-family: HYSMyeongJo-Medium;
+            font-size: 16px;
+            line-height: 1.5;
+          "
+        >
+          <strong>Imie i nazwisko:</strong> {{ first_name }} {{ last_name }}<br />
+          <strong>Data urodzenia:</strong> {{ date_of_birth }}<br />
+          <strong>Cena:</strong> {{ price }} zl<br />
+          <strong>Data zakupu:</strong> {{ purchase_time }}<br />
+        </div>
+      </div>
+
+      <div class="qr-code">
+        <img src="{{ qr_code }}" alt="QR Code" />
+      </div>
+    </div>
+  </body>
+</html>
