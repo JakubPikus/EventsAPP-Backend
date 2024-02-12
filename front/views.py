@@ -1702,16 +1702,19 @@ class EventsHomescreenView(APIView):
         
 
 
-        location_list = list(Event.objects.select_related('user', 'category', 'city', 'series').annotate(province=F('city__county__province__name'), image=Subquery(EventImage.objects.filter(
-            event=OuterRef('pk'), main=True).values('image_thumbnail')),location_distance=Distance('city__geo_location', user.city.geo_location), num_reputation=Subquery(subquery_num_reputation), gps_googlemap=Concat(Value('https://www.google.com/maps/dir/?api=1&origin='), user.city.geo_location[1], Value(','), user.city.geo_location[0], Value('&destination='),  output_field=CharField()), user_image=F('user__image_thumbnail'), series_events=ArraySubquery(subquery_series_events), series_details=F('series__description')   ).filter(
+        location_list = list(Event.objects.select_related('user', 'category', 'city', 'series').annotate(province=F('city__county__province__name'), image_thumbnail=Subquery(EventImage.objects.filter(
+            event=OuterRef('pk'), main=True).values('image_thumbnail')), image=Subquery(EventImage.objects.filter(
+            event=OuterRef('pk'), main=True).values('image')), location_distance=Distance('city__geo_location', user.city.geo_location), num_reputation=Subquery(subquery_num_reputation), gps_googlemap=Concat(Value('https://www.google.com/maps/dir/?api=1&origin='), user.city.geo_location[1], Value(','), user.city.geo_location[0], Value('&destination='),  output_field=CharField()), user_image=F('user__image_thumbnail'), series_events=ArraySubquery(subquery_series_events), series_details=F('series__description')   ).filter(
             pk__in=location_pks))
 
-        random_list = list(Event.objects.select_related('user', 'category', 'city', 'series').annotate(province=F('city__county__province__name'), image=Subquery(EventImage.objects.filter(
-            event=OuterRef('pk'), main=True).values('image_thumbnail')), location_distance=Distance('city__geo_location', user.city.geo_location), num_reputation=Subquery(subquery_num_reputation), gps_googlemap=Concat(Value('https://www.google.com/maps/dir/?api=1&origin='), user.city.geo_location[1], Value(','), user.city.geo_location[0], Value('&destination='),  output_field=CharField()), user_image=F('user__image_thumbnail'), series_events=ArraySubquery(subquery_series_events), series_details=F('series__description')).filter(
+        random_list = list(Event.objects.select_related('user', 'category', 'city', 'series').annotate(province=F('city__county__province__name'), image_thumbnail=Subquery(EventImage.objects.filter(
+            event=OuterRef('pk'), main=True).values('image_thumbnail')), image=Subquery(EventImage.objects.filter(
+            event=OuterRef('pk'), main=True).values('image')), location_distance=Distance('city__geo_location', user.city.geo_location), num_reputation=Subquery(subquery_num_reputation), gps_googlemap=Concat(Value('https://www.google.com/maps/dir/?api=1&origin='), user.city.geo_location[1], Value(','), user.city.geo_location[0], Value('&destination='),  output_field=CharField()), user_image=F('user__image_thumbnail'), series_events=ArraySubquery(subquery_series_events), series_details=F('series__description')).filter(
             pk__in=random_pks))
 
-        popular_list = list(Event.objects.select_related('user', 'category', 'city', 'series').annotate(province=F('city__county__province__name'), image=Subquery(EventImage.objects.filter(
-            event=OuterRef('pk'), main=True).values('image_thumbnail')), location_distance=Distance('city__geo_location', user.city.geo_location), num_reputation=Subquery(subquery_num_reputation), gps_googlemap=Concat(Value('https://www.google.com/maps/dir/?api=1&origin='), user.city.geo_location[1], Value(','), user.city.geo_location[0], Value('&destination='),  output_field=CharField()), user_image=F('user__image_thumbnail'), series_events=ArraySubquery(subquery_series_events), series_details=F('series__description')).filter(
+        popular_list = list(Event.objects.select_related('user', 'category', 'city', 'series').annotate(province=F('city__county__province__name'), image_thumbnail=Subquery(EventImage.objects.filter(
+            event=OuterRef('pk'), main=True).values('image_thumbnail')), image=Subquery(EventImage.objects.filter(
+            event=OuterRef('pk'), main=True).values('image')), location_distance=Distance('city__geo_location', user.city.geo_location), num_reputation=Subquery(subquery_num_reputation), gps_googlemap=Concat(Value('https://www.google.com/maps/dir/?api=1&origin='), user.city.geo_location[1], Value(','), user.city.geo_location[0], Value('&destination='),  output_field=CharField()), user_image=F('user__image_thumbnail'), series_events=ArraySubquery(subquery_series_events), series_details=F('series__description')).filter(
             pk__in=popular_pks))
 
 
@@ -2288,6 +2291,9 @@ class EventsListView(APIView):
 
                 subquery_main_image = EventImage.objects.filter(
                     event=OuterRef('pk'), main=True).values('image')
+                
+                subquery_main_image_thumbnail = EventImage.objects.filter(
+                    event=OuterRef('pk'), main=True).values('image_thumbnail')
 
                 time_now = timezone.now()
 
@@ -2302,7 +2308,7 @@ class EventsListView(APIView):
                         # Case(When(participants_event__username=user.username, then=True), default=False, output_field=BooleanField())
 
                         queryset = Event.objects.select_related('user', 'category', 'city').filter(
-                            **filter_list).annotate(location_distance=Distance('city__geo_location', user.city.geo_location), num_reputation=Subquery(subquery_num_reputation), gps_googlemap=Concat(Value('https://www.google.com/maps/dir/?api=1&origin='), user.city.geo_location[1], Value(','), user.city.geo_location[0], Value('&destination='),  output_field=CharField()), province=F('city__county__province__name'), user_image=F('user__image_thumbnail'), participant_self=Exists(subquery_participant_self), current=ExpressionWrapper(Q(event_date__gte=time_now), output_field=BooleanField()), image=Subquery(subquery_main_image)).order_by(order_by)
+                            **filter_list).annotate(location_distance=Distance('city__geo_location', user.city.geo_location), num_reputation=Subquery(subquery_num_reputation), gps_googlemap=Concat(Value('https://www.google.com/maps/dir/?api=1&origin='), user.city.geo_location[1], Value(','), user.city.geo_location[0], Value('&destination='),  output_field=CharField()), province=F('city__county__province__name'), user_image=F('user__image_thumbnail'), participant_self=Exists(subquery_participant_self), current=ExpressionWrapper(Q(event_date__gte=time_now), output_field=BooleanField()), image=Subquery(subquery_main_image), image_thumbnail=Subquery(subquery_main_image_thumbnail)).order_by(order_by)
                     else:
                         
 
@@ -2311,7 +2317,7 @@ class EventsListView(APIView):
                 else:
 
                     queryset = Event.objects.select_related('user', 'category', 'city').filter(**filter_list, city__in=City.objects.filter(geo_location__distance_lte=(
-                        origin_city.geo_location, D(km=distance)))).annotate(location_distance=Distance('city__geo_location', origin_city.geo_location), num_reputation=Subquery(subquery_num_reputation), gps_googlemap=Concat(Value('https://www.google.com/maps/dir/?api=1&origin='), origin_city.geo_location[1], Value(','), origin_city.geo_location[0], Value('&destination='),  output_field=CharField()), province=F('city__county__province__name'), user_image=F('user__image_thumbnail'), participant_self=Exists(subquery_participant_self), current=ExpressionWrapper(Q(event_date__gte=time_now), output_field=BooleanField()), image=Subquery(subquery_main_image)).order_by(order_by)
+                        origin_city.geo_location, D(km=distance)))).annotate(location_distance=Distance('city__geo_location', origin_city.geo_location), num_reputation=Subquery(subquery_num_reputation), gps_googlemap=Concat(Value('https://www.google.com/maps/dir/?api=1&origin='), origin_city.geo_location[1], Value(','), origin_city.geo_location[0], Value('&destination='),  output_field=CharField()), province=F('city__county__province__name'), user_image=F('user__image_thumbnail'), participant_self=Exists(subquery_participant_self), current=ExpressionWrapper(Q(event_date__gte=time_now), output_field=BooleanField()), image=Subquery(subquery_main_image), image_thumbnail=Subquery(subquery_main_image_thumbnail)).order_by(order_by)
 
                 paginator = EventsPagePagination()
 
@@ -11450,7 +11456,7 @@ class BankNumberView(APIView):
 
                 subquery_past_not_paid_event = Event.objects.filter(~(Exists(Paycheck.objects.filter(event__id=OuterRef('id')))) & Exists(OrderedTicket.objects.filter(ticket__event__id=OuterRef('id'), refunded=False)), user__id=OuterRef('id'), event_date__lt=time_now.date(), verificated="verificated")
 
-                subquery_blocked_change_bank_account = GatewayPaycheck.objects.filter(Q(tickets__order__user__id=OuterRef('id'))|Q(event__user__id=OuterRef('id')), remove_time__gte=time_now)
+                subquery_blocked_change_bank_account = GatewayPaycheck.objects.filter(Q(tickets__order__user__id=OuterRef('id'))|Q(event__user__id=OuterRef('id')), Q(remove_time__gte=time_now)&Q(paycheck__isnull=True))
 
                 subquery_amount_awaiting_refunding = AwaitingsTicketsRefund.objects.filter(user__id=OuterRef('id')).values('amount')
 
@@ -11517,7 +11523,7 @@ class BankNumberView(APIView):
 
                             if new_bank_number.isdigit() and len(new_bank_number) == 26:
 
-                                if not GatewayPaycheck.objects.filter(Q(tickets__order__user__id=user.id)|Q(event__user__id=user.id), remove_time__gte=time_now).exists():
+                                if not GatewayPaycheck.objects.filter(Q(tickets__order__user__id=user.id)|Q(event__user__id=user.id), Q(remove_time__gte=time_now)&Q(paycheck__isnull=True)).exists():
 
 
                                     CodeRegistration.objects.filter(user=user).delete()

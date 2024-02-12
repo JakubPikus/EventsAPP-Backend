@@ -1209,6 +1209,7 @@ class Notification(models.Model):
                 else:
                     event_id = object.event.id
 
+
                 return {
                     'id': object.id,
                     'event_id': event_id,

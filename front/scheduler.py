@@ -31,6 +31,7 @@ def start_scheduler():
 
 def automatic_refund_tickets_rejectedevent():
 
+
     stripe.api_key = settings.STRIPE_SECRET_KEY_TEST
 
 
@@ -38,6 +39,8 @@ def automatic_refund_tickets_rejectedevent():
     
 
     recipients_no_bank_notifications = {}
+
+    time_now = timezone.now()
 
     for event_id in event_ids:
 
@@ -60,7 +63,7 @@ def automatic_refund_tickets_rejectedevent():
             if all_orders_paid.filter(
                 ~(Exists(OrderedTicket.objects.filter(order__id=OuterRef('id'), used=True))) & 
                 ~(Exists(Paycheck.objects.filter(tickets__order__id=OuterRef('id')))) & 
-                ~(Exists(GatewayPaycheck.objects.filter(tickets__order__id=OuterRef('id'))))
+                ~(Exists(GatewayPaycheck.objects.filter(Q(tickets__order__id=OuterRef('id'))&Q(remove_time__gte=time_now))))
                 ).exists():
 
                 orders  = all_orders_paid.filter(~(Exists(OrderedTicket.objects.filter(order__id=OuterRef('id'), used=True))) & ~(Exists(Paycheck.objects.filter(tickets__order__id=OuterRef('id')))) & ~(Exists(GatewayPaycheck.objects.filter(tickets__order__id=OuterRef('id')))))

@@ -183,7 +183,7 @@ class EventSerializer(serializers.ModelSerializer):
     participant_self = serializers.BooleanField(read_only=True)
     current = serializers.BooleanField(read_only=True)
     image = serializers.CharField(required=False)
-    
+    image_thumbnail = serializers.CharField(required=False)
 
 
     series = serializers.StringRelatedField()
@@ -202,8 +202,8 @@ class EventSerializer(serializers.ModelSerializer):
         model = Event
         # fields = '__all__'
         fields = ('id', 'location_distance', 'gps_googlemap', 'num_reputation', 'province', 'city', 'current',
-                  'user', 'user_image', 'category', 'participant_self', 'slug', 'uuid', 'title', 'text', 'created_time', 'edit_time', 'event_date', 'image',  'series', 'series_details', 'schedule')
-        read_only_fields = ('id', 'title', 'text', 'image',
+                  'user', 'user_image', 'category', 'participant_self', 'slug', 'uuid', 'title', 'text', 'created_time', 'edit_time', 'event_date', 'image', 'image_thumbnail',  'series', 'series_details', 'schedule')
+        read_only_fields = ('id', 'title', 'text', 'image', 'image_thumbnail',
                             'event_date', )
         
 
@@ -225,6 +225,7 @@ class EventHomescreenSerializer(serializers.ModelSerializer):
     participant_self = serializers.BooleanField(read_only=True)
     current = serializers.BooleanField(read_only=True)
     image = serializers.CharField(required=False)
+    image_thumbnail = serializers.CharField(required=False)
     
 
 
@@ -245,7 +246,7 @@ class EventHomescreenSerializer(serializers.ModelSerializer):
         model = Event
         # fields = '__all__'
         fields = ('id', 'location_distance', 'gps_googlemap', 'num_reputation', 'province', 'city', 'current',
-                  'user', 'user_image', 'category', 'participant_self', 'slug', 'uuid', 'title', 'text', 'created_time', 'edit_time', 'event_date', 'image', 'series_events', 'series', 'series_details', 'schedule')
+                  'user', 'user_image', 'category', 'participant_self', 'slug', 'uuid', 'title', 'text', 'created_time', 'edit_time', 'event_date', 'image', 'image_thumbnail', 'series_events', 'series', 'series_details', 'schedule')
         read_only_fields = ('id', 'title', 'text', 'image',
                             'event_date', )
 
