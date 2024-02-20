@@ -6,7 +6,7 @@ from django.db.models import F, ExpressionWrapper, fields, Exists, OuterRef, Q, 
 from datetime import timedelta
 import stripe
 from ips_config import FRONTEND_IP
-from .views import send_websocket_notification
+from .views.functions import send_websocket_notification
 from django.db.models.functions import Concat, JSONObject, Length, Coalesce, Cast
 from django.contrib.postgres.aggregates import ArrayAgg, JSONBAgg
 

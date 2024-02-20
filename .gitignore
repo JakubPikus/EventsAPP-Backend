@@ -1,0 +1,5 @@
+myvenv/
+*.log
+*.pot
+*.pyc
+__pycache__

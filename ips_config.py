@@ -6,8 +6,8 @@ DATABASE_HOST = config('DATABASE_HOST', default='localhost')
 DATABASE_PORT = config('DATABASE_PORT', default='5432')
 DATABASE_USER = config('DATABASE_USER', default='postgres')
 DATABASE_PASSWORD = config('DATABASE_PASSWORD', default='12345678')
-DATABASE_NAME = config('DATABASE_NAME', default='Inz2023.28')
-DATABASE_URL = config('DATABASE_URL', default='postgresql://postgres:12345678@localhost:5432/Inz2023.28')
+DATABASE_NAME = config('DATABASE_NAME', default='Inz2023.30')
+DATABASE_URL = config('DATABASE_URL', default='postgresql://postgres:12345678@localhost:5432/Inz2023.30')
 
 
 REDIS_HOST = config('REDIS_HOST', default='127.0.0.1')
