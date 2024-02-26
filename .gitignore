@@ -3,3 +3,4 @@ myvenv/
 *.pot
 *.pyc
 __pycache__
+media/

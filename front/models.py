@@ -1241,7 +1241,7 @@ class NotificationsForUser(models.Model):
 
 
     def new_notification(self, id_notification, object, datetime):
-        from .views import append_extra_data_notification
+        from .views.functions import append_extra_data_notification
 
         list_of_arrays = eval(self.notifications_array)
         formatted_datetime = datetime.isoformat()
