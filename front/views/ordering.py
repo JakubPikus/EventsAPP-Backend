@@ -25,8 +25,6 @@ from collections import defaultdict
 import re
 import datetime
 import stripe
-import requests
-import base64
 import ast
 import calendar
 import os
@@ -1076,11 +1074,9 @@ class TicketPayView(APIView):
                                                     # IF DO ZWROTU DO FRONTENDU INFORMACJI O BRAKUJĄCYCH BILETACH W BAZIE LUB INNEJ CENIE, GDY W LISCIE ZNAJDĄ SIĘ DANE
                                                     if len(error_tickets) == 0:
 
-
                                                         order = Order.objects.create(user=user)
 
                                                         try:
-
 
                                                             stripe.api_key = settings.STRIPE_SECRET_KEY_TEST
                                                             stripe_response = stripe.checkout.Session.create(
@@ -1090,7 +1086,6 @@ class TicketPayView(APIView):
                                                             )
             
                                                             converted_amount_total = int(str(amount_total).replace('.', ''))
-
 
                                                             if stripe_response.amount_total == converted_amount_total:
 
@@ -1105,13 +1100,11 @@ class TicketPayView(APIView):
                                                                 else:
                                                                     order_expires_at = order_expires_at_temp
 
-
                                                                 if next_try_at_temp > expires_event_date:
                                                                     next_try_at = expires_event_date
                                                                 else:
                                                                     next_try_at = next_try_at_temp
 
-                                                                
                                                                 for ticket_instance in tickets_instances_to_create:
                                                                     ticket_instance.order = order
 
@@ -1126,12 +1119,10 @@ class TicketPayView(APIView):
                                                                 order.orderedtickets_ids_array = created_ids
                                                                 order.save()
 
-
                                                                 return Response(
                                                                         {'success': 'Sukces','url':stripe_response.url, "code": "2110"},
                                                                         status=status.HTTP_200_OK
                                                                     )
-
 
                                                             else:
                                                                 return Response(
@@ -1251,17 +1242,7 @@ class TicketGeneratePDFView(APIView):
     permission_classes = (permissions.AllowAny, )
     serializer_class = EventsViaTicketsSerializer
 
-    def get_base64_image_data(self, image_url):
-        try:
-            image_response = requests.get(image_url, verify=False)
-            image = Image.open(BytesIO(image_response.content))
 
-            buffered = BytesIO()
-            image.save(buffered, format="PNG")
-            return base64.b64encode(buffered.getvalue()).decode('utf-8')
-        except Exception as e:
-            print(f'Error processing image: {e}')
-            return ''
 
     def get(self, request, id):
         try:
@@ -1273,40 +1254,20 @@ class TicketGeneratePDFView(APIView):
 
                 if str(id).isdigit() and OrderedTicket.objects.filter(id=id).exists():
 
-                    ticket = OrderedTicket.objects.get(id=id)
+                    orderedticket = OrderedTicket.objects.get(id=id)
 
-                    if ticket.order.user.id == user.id:
+                    if orderedticket.order.user.id == user.id:
 
-                        if ticket.order.is_paid:
+                        if orderedticket.order.is_paid:
 
-                            if not ticket.refunded and not ticket.ticket.event.to_start_refund:
+                            if not orderedticket.refunded and not orderedticket.ticket.event.to_start_refund:
 
-                                main_image = EventImage.objects.get(event__id=ticket.ticket.event.id, main=True)
-
-                                context = {
-                                    'first_name': ticket.first_name,
-                                    'last_name': ticket.last_name,
-                                    'date_of_birth': ticket.date_of_birth.strftime('%Y-%m-%d'),
-                                    'price': ticket.purchase_price,
-                                    'purchase_time': ticket.order.paid_time.strftime('%Y-%m-%d %H:%M'),
-                                    'event_name': ticket.ticket.event.title,
-                                    'ticket_type': ticket.ticket.ticket_type,
-                                    'ticket_details': ticket.ticket.ticket_details,
-                                }
-
-
-
-                                qr_code_data = self.get_base64_image_data(f'{BACKEND_IP}{ticket.qr_code.url}')
-                                event_photo_data = self.get_base64_image_data(f'{BACKEND_IP}{main_image.image.url}')
-
-                                context['qr_code'] = f'data:image/png;base64,{qr_code_data}'
-                                context['event_photo'] = f'data:image/png;base64,{event_photo_data}'
-
-
+                                context = orderedticket.generate_ticket_pdf()
+                                
                                 html_content = get_template('template_ticket.html').render(context)
 
                                 response = HttpResponse(content_type='application/pdf', status=status.HTTP_200_OK)
-                                response['Content-Disposition'] = f'attachment; filename="ticket_{ticket.id}.pdf"'
+                                response['Content-Disposition'] = f'attachment; filename="ticket_{orderedticket.id}.pdf"'
 
                                 pisa_status = pisa.CreatePDF(html_content, dest=response, encoding='utf-8')
 
@@ -1319,7 +1280,7 @@ class TicketGeneratePDFView(APIView):
 
 
 
-                                if Paycheck.objects.filter(tickets__id=ticket.id).exists():
+                                if Paycheck.objects.filter(tickets__id=orderedticket.id).exists():
                                     paid_out_status = True
                                     code = "2135"
                                 else:
@@ -1750,7 +1711,6 @@ def payment(request):
     signature_header = request.META['HTTP_STRIPE_SIGNATURE']
     event = None
 
-
     try:
         event = stripe.Webhook.construct_event(
             payload, signature_header, settings.STRIPE_WEBHOOK_SECRET_TEST
@@ -1760,7 +1720,6 @@ def payment(request):
     except stripe.error.SignatureVerificationError as e:
         raise HttpResponse(status=400)
     
-
     if event['type'] == 'checkout.session.completed':
         order_payment_intent_id = event['data']['object']['id']
 

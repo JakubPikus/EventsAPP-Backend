@@ -44,11 +44,21 @@ class EventsViaCalendarView(APIView):
                                 subquery_num_reputation = Event.objects.filter(pk=OuterRef('pk')).values('pk').annotate(
                                     num_reputation=Count('participants_event')
                                 ).values('num_reputation')
+                                
                                 subquery_main_image = EventImage.objects.filter(
                                     event=OuterRef('pk'), main=True).values('image_thumbnail')
 
                                 queryset = Event.objects.select_related('user', 'category', 'city').filter(
-                                    (Q(participants_event__username=user.username) & Q(verificated="verificated")) | Q(user__username=user.username), event_date__range=[start_date, end_date]).annotate(num_reputation=Subquery(subquery_num_reputation), type=F('verificated'), province=F('city__county__province__name'), current=Q(event_date__gte=time_now), image=Subquery(subquery_main_image), user_client=Value(user, output_field=CharField())).order_by('-id').distinct()
+                                    (Q(participants_event__username=user.username) & Q(verificated="verificated")) | Q(user__username=user.username), 
+                                    event_date__range=[start_date, end_date]).annotate(
+                                        num_reputation=Subquery(subquery_num_reputation), 
+                                        type=F('verificated'), 
+                                        province=F('city__county__province__name'), 
+                                        current=Q(event_date__gte=time_now), 
+                                        image=Subquery(subquery_main_image), 
+                                        user_client=Value(user, output_field=CharField())).order_by('-id').distinct()
+
+
 
                                 events_data = EventsViaCalendarSerializer(
                                     queryset, many=True).data
@@ -59,9 +69,7 @@ class EventsViaCalendarView(APIView):
                                     data[day+1] = []
 
                                 for event in events_data:
-                                    length_date = len(event["event_date"])
-                                    data[int(event["event_date"]
-                                             [length_date-2:])].append(event)
+                                    data[int(event["event_date"][8:])].append(event)
 
                                 return Response(
                                     {'success': 'Pobrano wydarzenia',

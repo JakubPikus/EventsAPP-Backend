@@ -39,11 +39,12 @@ class CustomBlacklistMixin(BlacklistMixin):
 
         return CustomBlacklistedToken.objects.get_or_create(token=token)
 
+    """
+    Adds this token to the outstanding token list.
+    """
+
     @classmethod
     def for_user(cls, user, ip_validator):
-        """
-        Adds this token to the outstanding token list.
-        """
         token = super().for_user(user)
 
         jti = token[api_settings.JTI_CLAIM]

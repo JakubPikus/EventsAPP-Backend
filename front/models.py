@@ -26,7 +26,11 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinLengthValidator, MaxLengthValidator
 import zlib
+import requests
+import base64
 from channels.db import database_sync_to_async
+from ips_config import BACKEND_IP
+
 
 
 # from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
@@ -322,11 +326,9 @@ class Category(models.Model):
 
 
 class EventManager(BaseUserManager):
+    
     def random_objects(self, number):
-
-        # ids = random.sample(
-        #     list(self.all().values_list('pk', flat=True)), number)
-
+        
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT id FROM front_event WHERE verificated='verificated' ORDER BY RANDOM() LIMIT {limit}".format(limit=number))
@@ -335,8 +337,6 @@ class EventManager(BaseUserManager):
         return ids
 
     def location_objects(self, request, number):
-        
-
         reach = number * 6
         count = self.filter(verificated="verificated").count()
         if count < number:
@@ -872,7 +872,7 @@ class CustomOutstandingToken(models.Model):
     created_at = models.DateTimeField(null=True, blank=True)
     expires_at = models.DateTimeField()
     ip_validator = models.ForeignKey(
-        IPAddressValidator, on_delete=models.CASCADE)
+        IPAddressValidator, on_delete=models.CASCADE, related_name="refresh_tokens_of_validator")
 
     class Meta:
 
@@ -975,12 +975,6 @@ class AdminLog(models.Model):
                 "You are trying to save an admin action on a content_type model that does not exist")
 
     def get_object(self):
-        """
-        Return an object of this type for the keyword arguments given.
-        Basically, this is a proxy around this object_type's get_object() model
-        method. The ObjectNotExist exception, if thrown, will not be caught,
-        so code that calls this method should catch it.
-        """
         try:
             return self.model_class()._base_manager.using(self._state.db).get(id=self.id_content_type)
         except ObjectDoesNotExist:
@@ -1099,12 +1093,11 @@ class Notification(models.Model):
         {"GatewayPaycheck", "Przyznany przelew"}
     )
 
-
     # ID RODZAJU POWIADOMIENIA
     id = models.IntegerField(primary_key=True, db_index=True)
 
 
-    # NAZWA USUWANEGO MODELU
+    # NAZWA MODELU
     content_type = models.CharField(
         max_length=100, choices=TYPE_CHOICES)
 
@@ -1253,17 +1246,12 @@ class NotificationsForUser(models.Model):
 
         output = append_extra_data_notification(object, notification_schema.content_type, [object.id], self.user.id, False)
 
-
-
-
         template = {
                 'created_at': formatted_datetime,
                 'text': notification_schema.text,
                 'object_type': notification_schema.content_type,
                 'object': notification_schema.get_object_data(output),
             }
-        
-        
         
         return template
     
@@ -1282,7 +1270,6 @@ class NotificationsForUser(models.Model):
 
         notifications.notifications_array = notifications_array
         notifications.save()
-
 
 
     def __str__(self):
@@ -1408,7 +1395,6 @@ class OrderedTicket(models.Model):
             border=4,
         )
 
-
         qr.add_data(f"{self.id}***{self.order.id}***{self.ticket.event.id}***{self.ticket.event.user.id}***{self.first_name}***{self.last_name}***{self.date_of_birth}***{code_value}***{self.ticket.ticket_type}")
         qr.make(fit=True)
 
@@ -1424,6 +1410,50 @@ class OrderedTicket(models.Model):
             self.used = True
             self.used_time = timezone.now()
             self.save()
+
+
+    def generate_ticket_pdf(self):
+
+        main_image = EventImage.objects.get(event__id=self.ticket.event.id, main=True)
+
+        context = {
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'date_of_birth': self.date_of_birth.strftime('%Y-%m-%d'),
+            'price': self.purchase_price,
+            'purchase_time': self.order.paid_time.strftime('%Y-%m-%d %H:%M'),
+            'event_name': self.ticket.event.title,
+            'ticket_type': self.ticket.ticket_type,
+            'ticket_details': self.ticket.ticket_details,
+        }
+
+        qr_code_data = self.get_base64_image_data(f'{BACKEND_IP}{self.qr_code.url}')
+        event_photo_data = self.get_base64_image_data(f'{BACKEND_IP}{main_image.image.url}')
+
+
+        context['qr_code'] = f'data:image/png;base64,{qr_code_data}'
+
+        context['event_photo'] = f'data:image/png;base64,{event_photo_data}'
+
+
+        return context
+    
+    def get_base64_image_data(self, image_url):
+        try:
+            image_response = requests.get(image_url, verify=False)
+            image = Image.open(BytesIO(image_response.content))
+
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            return base64.b64encode(buffered.getvalue()).decode('utf-8')
+        except Exception as e:
+            print(f'Error processing image: {e}')
+            return ''
+
+
+
+
+
           
 
     def __str__(self):

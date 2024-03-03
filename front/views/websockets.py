@@ -305,8 +305,12 @@ class UserConversationView(APIView):
                         if cursor_id != None and cursor_id != "":
                             filter_cursor['message_id__lt'] = cursor_id
 
-                        messages = ActiveMessage.objects.filter((Q(sender__id=user.id) & Q(
-                            recipient__id=target_user_id)) | (Q(sender__id=target_user_id) & Q(recipient__id=user.id)), **filter_cursor).annotate(author=F('sender__id'), status=Case(When(is_delivered=True, then=Value("is_delivered")), default=Value('is_send'), output_field=CharField())).order_by('-message_id')[:7]
+                        messages = ActiveMessage.objects.filter(
+                            (Q(sender__id=user.id) & Q(recipient__id=target_user_id)) | 
+                            (Q(sender__id=target_user_id) & Q(recipient__id=user.id)), 
+                            **filter_cursor).annotate(author=F('sender__id'), 
+                                                      status=Case(When(is_delivered=True, then=Value("is_delivered")), default=Value('is_send'), output_field=CharField())
+                                                      ).order_by('-message_id')[:7]
 
                         messages = UserConversationSerializer(
                             messages, many=True)

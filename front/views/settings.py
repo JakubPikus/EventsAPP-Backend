@@ -525,7 +525,8 @@ class LogoutFromDevicesView(APIView):
                                     today = timezone.now()
 
                                     tokens_to_blacklist = CustomOutstandingToken.objects.select_related('user').filter(
-                                        ~Q(token=refresh_token), ip_validator__in=ip_validators, expires_at__gte=today).exclude(id__in=CustomBlacklistedToken.objects.filter(token__ip_validator__in=ip_validators).values_list('token_id', flat=True))
+                                        ~Q(token=refresh_token), ip_validator__in=ip_validators, expires_at__gt=today, customblacklistedtoken__isnull=True)
+                    
 
                                     for active_token in tokens_to_blacklist:
 
@@ -1531,7 +1532,12 @@ class BankNumberView(APIView):
 
                 subquery_future_event = Event.objects.filter(Exists(Ticket.objects.filter(event__id=OuterRef('id'), was_allowed=True)), user__id=OuterRef('id'), event_date__gte=time_now.date(), to_start_refund=False)
 
-                subquery_past_not_paid_event = Event.objects.filter(~(Exists(Paycheck.objects.filter(event__id=OuterRef('id')))) & Exists(OrderedTicket.objects.filter(ticket__event__id=OuterRef('id'), refunded=False)), user__id=OuterRef('id'), event_date__lt=time_now.date(), verificated="verificated")
+                subquery_past_not_paid_event = Event.objects.filter(
+                    ~(Exists(Paycheck.objects.filter(event__id=OuterRef('id')))) 
+                    & 
+                    Exists(OrderedTicket.objects.filter(ticket__event__id=OuterRef('id'), refunded=False)), 
+                    user__id=OuterRef('id'), 
+                    event_date__lt=time_now.date(), verificated="verificated")
 
                 subquery_blocked_change_bank_account = GatewayPaycheck.objects.filter(Q(tickets__order__user__id=OuterRef('id'))|Q(event__user__id=OuterRef('id')), Q(remove_time__gte=time_now)&Q(paycheck__isnull=True))
 

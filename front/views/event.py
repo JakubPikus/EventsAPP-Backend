@@ -322,7 +322,6 @@ class EventView(APIView):
                     ticket_annotate = {}
 
                     if not (user.is_admin or Event.objects.filter(slug=slug, uuid=uuid, user__id=user.id).exists()):
-                        # ticket_filter['verificated'] = "verificated"
                         ticket_filter['was_allowed'] = True
                     else:
                         ticket_annotate['new_price'] = F('new_price')
@@ -361,8 +360,24 @@ class EventView(APIView):
 
 
 
-                    event = Event.objects.select_related(
-                        'user', 'category', 'city', 'series').annotate(location_distance=Distance('city__geo_location', user.city.geo_location), num_reputation=Subquery(subquery_num_reputation), gps_googlemap=Concat(Value('https://www.google.com/maps/dir/?api=1&origin='), user.city.geo_location[1], Value(','), user.city.geo_location[0], Value('&destination='),  output_field=CharField()), province=F('city__county__province__name'), user_image=F('user__image_thumbnail'), participant_self=Exists(subquery_participant_self), my_report=Subquery(subquery_report_type), current=Q(event_date__gte=time_now), series_details=F('series__description'),tickets=ArraySubquery(subquery_tickets), user_client=Value(user, output_field=CharField()), image=ArraySubquery(subquery_image)).get(slug__iexact=slug, uuid=uuid)
+                    event = Event.objects.select_related('user', 'category', 'city', 'series').annotate(
+                                                                        location_distance=Distance('city__geo_location', user.city.geo_location), 
+                                                                       num_reputation=Subquery(subquery_num_reputation), 
+                                                                       gps_googlemap=Concat(Value('https://www.google.com/maps/dir/?api=1&origin='), 
+                                                                                            user.city.geo_location[1], 
+                                                                                            Value(','), 
+                                                                                            user.city.geo_location[0], 
+                                                                                            Value('&destination='),  
+                                                                                            output_field=CharField()), 
+                                                                        province=F('city__county__province__name'), 
+                                                                        user_image=F('user__image_thumbnail'), 
+                                                                        participant_self=Exists(subquery_participant_self), 
+                                                                        my_report=Subquery(subquery_report_type), 
+                                                                        current=Q(event_date__gte=time_now), 
+                                                                        series_details=F('series__description'),
+                                                                        tickets=ArraySubquery(subquery_tickets), 
+                                                                        user_client=Value(user, output_field=CharField()), 
+                                                                        image=ArraySubquery(subquery_image)).get(slug__iexact=slug, uuid=uuid)
 
 
 

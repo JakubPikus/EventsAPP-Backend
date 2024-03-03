@@ -135,12 +135,12 @@ DATABASES = {
     }
 }
 
-# GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal306.dll'
-# GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'
+
 
 GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal306'
 
 GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c'
+
 
 
 

@@ -153,22 +153,20 @@ class BadgeCodesLockedToExportView(APIView):
                                                     elif not any(badge_code.status == "b) locked" for badge_code in badge_codes):
 
                                                         # NAMIERZENIE NIEUŻYTYCH KODÓW Z TYCH PODANYCH ORAZ ZMIANA ICH STANU NA LOCKED
-
                                                         not_used_badge_codes = badge_codes.filter(
                                                             Q(activated_by=None))
                                                         not_used_badge_codes.update(
                                                             status="b) locked")
 
                                                         # NAMIERZENIE UŻYTYCH KODÓW Z TYCH PODANYCH
-
                                                         used_badge_codes = badge_codes.select_related(
                                                             'activated_by').filter(~Q(activated_by=None))
 
-                                                        # USTALENIE TYCH ID, KTÓRE ZOSTAŁY UŻYTE DO : 1) USUNIĘCIA Z LISTY PODANYCH ID TYCH, KTORE ZOSTAŁY ZUŻYTE; 2) ABY POINFORMOWAĆ REDUCER O ZMIANIE STANU ZUŻYTYCH KODÓW NA "used" AKTYWOWANE PRZEZ x_user
+                                                        # USTALENIE TYCH ID, KTÓRE ZOSTAŁY UŻYTE
                                                         used_ids = set(
                                                             used_badge_codes.values_list('id', flat=True))
 
-                                                        # USUNIĘCIE TYCH ID KODÓW Z LISTY KTÓRA ZOSTAŁA WYSŁANA DO LOCKOWANIA, KTÓRE WCZEŚNIEJ ZOSTAŁY AKTYWOWANE, ABY ZWRÓCIĆ DO REDUCERA LISTĘ ID DO ZMIANY STANU NA "locked" a nie "used"
+                                                        # USUNIĘCIE TYCH ID KODÓW Z LISTY KTÓRA ZOSTAŁA WYSŁANA DO LOCKOWANIA, KTÓRE WCZEŚNIEJ ZOSTAŁY AKTYWOWANE
                                                         set_badge_codes_id_list -= used_ids
 
                                                         # UTWORZENIE NOWYCH KODÓW ZE STATUSEM "b) locked" W TAKIEJ ILOŚCI, ILE KODÓW ZOSTAŁO WYKRYTE JAKO UŻYTE
@@ -190,14 +188,11 @@ class BadgeCodesLockedToExportView(APIView):
                                                         created_badge_codes_serialized = BadgesCodesCreateSerializer(
                                                             created_badge_codes, many=True)
 
-                                                        # POŁĄCZENIE ZE SOBĄ DLA EXPORTU KODÓW:
-                                                        #
-                                                        # 1) KODY PODANE KTÓRE NIE SĄ UŻYTE
-                                                        #
-                                                        # 2) KODY UTWORZONE W ILOŚCI TAKIEJ, ILE WYKRYTO UŻYTYCH
-
+                                                        # POŁĄCZENIE KODÓW:
                                                         codes_to_export = not_used_badge_codes.union(
                                                             created_badge_codes_queryset)
+                                                        
+
 
                                                         # SERIALIZACJA ZSUMOWANYCH KODÓW DO EXPORTU DO POPRAWNEGO ODBIORU PRZEZ GENERATOR EXCEL
 

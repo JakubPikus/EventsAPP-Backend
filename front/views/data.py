@@ -160,7 +160,7 @@ class EventsHomescreenView(APIView):
 
                         popular_pks = list(
                             Event.objects.popular_objects(int(MAX_PAGE/3)))
-                        # tutej
+                        
 
                         response = self.set_cookie(
                             location_pks, random_pks, popular_pks)

@@ -1,6 +1,6 @@
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
-from ..models import City, CodeRegistration, MyUser, IPAddress, IPAddressValidator, CommentEventReaction, CommentEventReport, CommentEvent, EventImage, Ticket, OrderedTicket, Paycheck, AwaitingsTicketsRefund, Order, GatewayPaycheck, Event
+from ..models import City, CodeRegistration, MyUser, Image, IPAddress, IPAddressValidator, CommentEventReaction, CommentEventReport, CommentEvent, EventImage, Ticket, OrderedTicket, Paycheck, AwaitingsTicketsRefund, Order, GatewayPaycheck, Event
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 from ..custom_refresh_token import CustomRefreshToken
@@ -10,7 +10,11 @@ import datetime
 import re
 import ast
 import PyPDF2
+import requests
+import base64
 from rest_framework import status
+from io import BytesIO
+from django.utils import timezone
 from django.db.models import OuterRef, Subquery, CharField, Case, When, F, Exists, Sum, Value
 from django.db.models.functions import JSONObject, Concat
 from ..serializers import CommentEventSerializer
@@ -27,14 +31,15 @@ from asgiref.sync import async_to_sync
 
 def get_location_from_ip(ip_address):
 
-    # endpoint = f"https://freeipapi.com/api/json/{ip_address}"
-    # response = requests.get(endpoint)
-    # data = response.json()
-    # latitude = float(data['latitude'])
-    # longitude = float(data['longitude'])
 
-    latitude = 52.881409
-    longitude = 20.619961
+    endpoint = f"https://freeipapi.com/api/json/{ip_address}"
+    response = requests.get(endpoint)
+    data = response.json()
+    latitude = float(data['latitude'])
+    longitude = float(data['longitude'])
+
+    # latitude = 52.881409
+    # longitude = 20.619961
 
     closest_city = City.objects.annotate(distance=Distance(
         'geo_location', Point(longitude, latitude, srid=4326))).order_by('distance').first()
@@ -178,8 +183,18 @@ def check_banned_status(user_id, ip_address):
             if IPAddressValidator.objects.filter(user=user, ip_address=ip_address_obj).exists():
                 ip_validator = IPAddressValidator.objects.get(
                     user=user, ip_address=ip_address_obj)
-
+                
                 if ip_validator.is_verificated == False:
+
+                    time_now = timezone.now()
+
+                    tokens_to_blacklist = ip_validator.refresh_tokens_of_validator.filter(expires_at__gt=time_now, customblacklistedtoken__isnull=True)
+                    
+                    for refresh_token in tokens_to_blacklist:
+                        token = CustomRefreshToken(refresh_token.token)
+                        token.blacklist()
+
+
                     response = remove_cookies(420)
                     response.data = {
                         "detail": "Zostałeś wylogowany z konta", "code": "420"}
@@ -255,12 +270,15 @@ def actual_comments(user, slug, uuid):
 
 
     comments = CommentEvent.objects.select_related('author', 'event').filter(event__slug__iexact=slug, event__uuid=uuid).annotate(author_image=F(
-        'author__image_thumbnail'), my_reaction=Subquery(subquery_my_reaction), my_report=Subquery(subquery_report_type), **filter_admin).order_by('-id')
+        'author__image_thumbnail'), search_user_id=Value(user.id), my_reaction=Subquery(subquery_my_reaction), my_report=Subquery(subquery_report_type), **filter_admin).order_by('-id')
 
 
     count = comments.count()
     comments_filtered = comments.filter(
         parent_comment=None)
+    
+
+
 
     comments_filtered = CommentEventSerializer(
         comments_filtered, many=True, context={'is_admin': user.is_admin})
@@ -556,3 +574,4 @@ def check_file_is_pdf(file):
                 status=status.HTTP_400_BAD_REQUEST
             )
     return response
+

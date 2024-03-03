@@ -654,12 +654,12 @@ class PasswordResetConfirmView(APIView):
                     if not user.is_banned:
 
                         if CodeRegistration.objects.filter(user=user).exists():
+                            
                             code_backend = CodeRegistration.objects.filter(
                                 user=user).values_list('code_random', flat=True)
 
                             if code in code_backend:
                                 if password == re_password:
-
                                     if not user.is_verificated:
                                         user.is_verificated = True
                                     user.set_password(password)
@@ -724,7 +724,7 @@ class LoginGoogleView(APIView):
     serializer_class = LoginGoogleSerializer
     authentication_classes = ()
 
-
+    # 118143322891147953844
 
     def get(self, request):
         try:
@@ -741,8 +741,6 @@ class LoginGoogleView(APIView):
 
             res = requests.post(
                 "https://oauth2.googleapis.com/token", data=request_data)
-
-            # 118143322891147953844
 
             if res.ok:
 
@@ -873,6 +871,10 @@ class LoginFacebookView(APIView):
     permission_classes = (permissions.AllowAny, )
     serializer_class = LoginFacebookSerializer
 
+
+    # https://graph.facebook.com/me?fields=id,first_name,last_name,email,picture&access_token=EAALAspc7n18BAG7m09lUKd3aEaEuLrPMitRgiS3oivMjY0tXZCeE7uTkZCZC5wWXh0JSczUCgJXgah8c8ElCiZCQAydIZCNuMno9SqarZA7vaEZAdYp6TF2hVvR0SYFf7g7OFqHcZBcm414ZB4By6Cz5RmhY3t0Kkl7jZA68XZAaVonYNMgmwnFlyxIMYAC25kHHmZBsyWrzTZBLRJbOIoyOWKrZBHGRurujM7X1xapZCflpfDtnQZDZD
+    # 9364677030240030
+
     def get(self, request):
         try:
             data = request.GET
@@ -896,18 +898,18 @@ class LoginFacebookView(APIView):
                     'access_token': access_token
                 }
 
-                # https://graph.facebook.com/me?fields=id,first_name,last_name,email,picture&access_token=EAALAspc7n18BAG7m09lUKd3aEaEuLrPMitRgiS3oivMjY0tXZCeE7uTkZCZC5wWXh0JSczUCgJXgah8c8ElCiZCQAydIZCNuMno9SqarZA7vaEZAdYp6TF2hVvR0SYFf7g7OFqHcZBcm414ZB4By6Cz5RmhY3t0Kkl7jZA68XZAaVonYNMgmwnFlyxIMYAC25kHHmZBsyWrzTZBLRJbOIoyOWKrZBHGRurujM7X1xapZCflpfDtnQZDZD
-                # 9364677030240030
                 res_user = requests.get(
                     "https://graph.facebook.com/me",
                     params=request_user_data
                 )
                 if res_user.ok:
-
                     social_id = res_user.json()['id']
                     if FacebookUser.objects.filter(social_id=social_id).exists():
                         user = FacebookUser.objects.get(
                             social_id=social_id).user
+                        
+
+                        
                         name_device = parse(
                             request.META.get('HTTP_USER_AGENT'))
                         ip_address = request.META.get('REMOTE_ADDR')

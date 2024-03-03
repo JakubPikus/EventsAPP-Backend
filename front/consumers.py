@@ -118,7 +118,7 @@ class ConnectingConsumer(AsyncJsonWebsocketConsumer):
 
         await self.accept()
 
-        if not response:  # 2) PRZYPADEK GDY TOKEN JEST NIEPOPRAWNY -> WYLOGOWANIE
+        if not response:  # 1) PRZYPADEK GDY TOKEN JEST NIEPOPRAWNY -> WYLOGOWANIE
 
             self.token_expiry = None
 
@@ -126,11 +126,12 @@ class ConnectingConsumer(AsyncJsonWebsocketConsumer):
                 self.user_id,
                 {
                     'type': 'notvalid_access_token',
-
                 }
             )
             return
 
+
+        # 2) GDY NIE MA TOKENU ODSWIEZANIA + BRAK TOKENU DOSTEPU LUB JEGO CZAS MINAL
         elif refresh_token == None and (int(time.time()) > response or access_token == None):
 
             self.token_expiry = None
@@ -138,18 +139,16 @@ class ConnectingConsumer(AsyncJsonWebsocketConsumer):
                 self.user_id,
                 {
                     'type': 'tokens_not_found',
-
-
                 }
             )
             return
 
-        # 2) PRZYPADEK GDY WYKRYTY TOKEN JEST TEN SAM -> NASTEPUJE ROZLACZENIE I PRZEKAZANIE DO REACTA WYMUSZENIE AKCJI ODNOWY
+        # 3) PRZYPADEK GDY WYKRYTY TOKEN JEST TEN SAM -> NASTEPUJE ROZLACZENIE I PRZEKAZANIE DO REACTA WYMUSZENIE AKCJI ODNOWY
         elif int(time.time()) > response or access_token == None:
 
             self.token_expiry = 'token_refresh'
 
-        else:        # 2) PRZYPADEK GDY TOKEN JEST PRAWIDŁOWY, NASTĘPUJE PRZYPISANIE TOKENU
+        else: # 4) PRZYPADEK GDY TOKEN JEST PRAWIDŁOWY, NASTĘPUJE PRZYPISANIE TOKENU
 
             self.token_expiry = response
 
@@ -177,13 +176,15 @@ class ConnectingConsumer(AsyncJsonWebsocketConsumer):
         )
 
 
+    # 1) SYTUACJA GDY WYKONUJEMY JAKAS AKCJE A SIE OKAZE ZE TOKEN JEST STARY
+        
     async def receive(self, text_data):
         import time
 
         text_data_json = json.loads(text_data)
         event_type = text_data_json.get('event_type')
 
-        # 1) SYTUACJA GDY WYKONUJEMY JAKAS AKCJE A SIE OKAZE ZE TOKEN JEST STARY
+        
 
         if self.token_expiry == 'token_refresh':
 
@@ -278,8 +279,6 @@ class ConnectingConsumer(AsyncJsonWebsocketConsumer):
         elif OnlineUsers.is_online(recipient_id):
             message_id, timestamp, is_friend, username_recipient, image_thumbnail_recipient, username_sender, image_thumbnail_sender = await ActiveMessage.save_message(content, self.user_id, recipient_id, True)
             timestamp_str = timestamp.isoformat()
-
-            
 
             await self.channel_layer.group_send(
                 recipient_id,

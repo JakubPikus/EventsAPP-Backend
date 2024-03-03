@@ -59,14 +59,21 @@ def automatic_refund_tickets_rejectedevent():
 
             
 
-            # JEŚLI ISTNIEJĄ JAKIES ZAMÓWIENIA, W KTÓRYCH BILET NIE ZOSTAŁ UŻYTY, ANI NIE ZOSTAŁA OPŁACONA JEGO REFUNDACJA ZA ZWROT, !!ORAZ!!! ŻADEN BILET NIE MA OTWARTEGO GATEWAYA BO TO ZNACZY ZE ZOSTALA ROZPOCZETA AKCJA ZWROTU, TO COFAMY PLATNOSC W API NA KONTO Z KTOREGO ZOSTALO ZAPLACONE ZA BILETY
+            # JEŚLI ISTNIEJĄ JAKIES ZAMÓWIENIA, W KTÓRYCH 
+            
+            #BILET NIE ZOSTAŁ UŻYTY, ANI NIE ZOSTAŁA OPŁACONA JEGO REFUNDACJA ZA ZWROT, 
+            #!!ORAZ!!! 
+            #ŻADEN BILET NIE MA OTWARTEGO GATEWAYA BO TO ZNACZY ZE ZOSTALA ROZPOCZETA AKCJA ZWROTU, TO COFAMY PLATNOSC W API NA KONTO Z KTOREGO ZOSTALO ZAPLACONE ZA BILETY
+
             if all_orders_paid.filter(
                 ~(Exists(OrderedTicket.objects.filter(order__id=OuterRef('id'), used=True))) & 
                 ~(Exists(Paycheck.objects.filter(tickets__order__id=OuterRef('id')))) & 
                 ~(Exists(GatewayPaycheck.objects.filter(Q(tickets__order__id=OuterRef('id'))&Q(remove_time__gte=time_now))))
                 ).exists():
 
-                orders  = all_orders_paid.filter(~(Exists(OrderedTicket.objects.filter(order__id=OuterRef('id'), used=True))) & ~(Exists(Paycheck.objects.filter(tickets__order__id=OuterRef('id')))) & ~(Exists(GatewayPaycheck.objects.filter(tickets__order__id=OuterRef('id')))))
+                orders  = all_orders_paid.filter(~(Exists(OrderedTicket.objects.filter(order__id=OuterRef('id'), used=True))) 
+                                                 & ~(Exists(Paycheck.objects.filter(tickets__order__id=OuterRef('id')))) 
+                                                 & ~(Exists(GatewayPaycheck.objects.filter(tickets__order__id=OuterRef('id')))))
 
                 success_order_tickets = []
 
@@ -102,11 +109,31 @@ def automatic_refund_tickets_rejectedevent():
 
             # JEŚLI UZYTKOWNIK ODPIAL SWOJE KONTO BANKOWE OD PROFILU, A SYSTEM AUTOMATYCZNEGO ZWROTU WYKRYL, ZE ISTNIEJE JAKIES ZAMÓWIENIE TEGO USERA 
             # W KTORYM ZOSTAL OPLACONY ZWROT LUB BILET ZOSTAL UZYTY I STRONA DOMAGA SIE OD NIEGO PODPIECIA KONTA BANKOWEGO W CELU DOKONANIA PRZELEWU ZA ZWROT
-            if MyUser.objects.filter(bank_number="", id=customer_id).exists() and all_orders_paid.filter( (Q(Exists(Paycheck.objects.filter(tickets__order__id=OuterRef('id'))))|Q(Exists(OrderedTicket.objects.filter(order__id=OuterRef('id'), used=True))))&Q(Exists(OrderedTicket.objects.filter(~(Exists(Paycheck.objects.filter(tickets__id=OuterRef('id')))), order__id=OuterRef('id'), used=False)))).exists():
+                    
+            if MyUser.objects.filter(bank_number="", id=customer_id).exists() and all_orders_paid.filter( 
+                                                        (
+                                                        Q(Exists(Paycheck.objects.filter(tickets__order__id=OuterRef('id')))) 
+                                                        |
+                                                        Q(Exists(OrderedTicket.objects.filter(order__id=OuterRef('id'), used=True)))
+                                                        )  
+                                                        &
+                                                        Q(Exists(OrderedTicket.objects.filter(~(Exists(Paycheck.objects.filter(tickets__id=OuterRef('id')))), order__id=OuterRef('id'), used=False)))
+                                                        ).exists():
 
-                order_ids_problem = all_orders_paid.filter((Q(Exists(Paycheck.objects.filter(tickets__order__id=OuterRef('id'))))|Q(Exists(OrderedTicket.objects.filter(order__id=OuterRef('id'), used=True))))&Q(Exists(OrderedTicket.objects.filter(~(Exists(Paycheck.objects.filter(tickets__id=OuterRef('id')))), order__id=OuterRef('id'), used=False)))).values_list('id', flat=True)
 
-                orderedtickets_awaiting_to_pin_banknumber = OrderedTicket.objects.filter(~(Exists(Paycheck.objects.filter(tickets__id=OuterRef('id')))), order__in=order_ids_problem, used=False).values_list('id', flat=True)
+                order_ids_problem = all_orders_paid.filter(
+                    (
+                        Q(Exists(Paycheck.objects.filter(tickets__order__id=OuterRef('id'))))
+                        |
+                        Q(Exists(OrderedTicket.objects.filter(order__id=OuterRef('id'), used=True)))
+                    )
+                    &
+                    Q(Exists(OrderedTicket.objects.filter(~(Exists(Paycheck.objects.filter(tickets__id=OuterRef('id')))), order__id=OuterRef('id'), used=False)))
+                    ).values_list('id', flat=True)
+
+                orderedtickets_awaiting_to_pin_banknumber = OrderedTicket.objects.filter(
+                                        ~(Exists(Paycheck.objects.filter(tickets__id=OuterRef('id')))), 
+                                        order__in=order_ids_problem, used=False).values_list('id', flat=True)
 
                 user = MyUser.objects.get(id=customer_id)
                 new_awaitings, created = AwaitingsTicketsRefund.objects.get_or_create(user=user )

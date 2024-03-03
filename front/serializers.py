@@ -336,11 +336,12 @@ class CommentEventSerializer(serializers.ModelSerializer):
     my_reaction = serializers.CharField(read_only=True)
     my_report = serializers.CharField(read_only=True)
     is_blocked = serializers.BooleanField(read_only=True)
+    search_user_id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = CommentEvent
         fields = ('id', 'event', 'author', 'author_image', 'text_comment', 'is_blocked', 'score', 'my_reaction', 'my_report',
-                  'slug', 'uuid', 'id_reply', 'parent_comment', 'created_at', 'replies', 'is_blocked')
+                  'slug', 'uuid', 'id_reply', 'parent_comment', 'created_at', 'replies', 'is_blocked', 'search_user_id')
         read_only_fields = ('created_at', 'author',
                             'event', 'id', 'parent_comment', 'author_image', 'created_at', 'score', 'my_reaction', 'my_report', 'is_blocked')
 
@@ -348,15 +349,22 @@ class CommentEventSerializer(serializers.ModelSerializer):
 
         is_admin = self.context.get("is_admin")
 
+        subquery_report_type = CommentEventReport.objects.filter(comment__pk=OuterRef('pk'), user__id=obj.search_user_id).values('type')[:1]
+
+        subquery_my_reaction = CommentEventReaction.objects.filter(comment__id=OuterRef('id'), user__id=obj.search_user_id).values('type')[:1]
+
+
+
         if is_admin:
-            replies = obj.replies.all().select_related('author', 'event').annotate(author_image=F('author__image_thumbnail'),
-                                                                                   my_reaction=F('commenteventreaction__type'), my_report=F('commenteventreport__type'), text_comment=F('text')).order_by('-id')
+            replies = obj.replies.all().select_related('author', 'event').annotate(author_image=F('author__image_thumbnail'), search_user_id=Value(obj.search_user_id),
+                                                                                   my_reaction=Subquery(subquery_my_reaction), my_report=Subquery(subquery_report_type), text_comment=F('text')).order_by('-id')
+            
         else:
-            replies = obj.replies.all().select_related('author', 'event').annotate(author_image=F('author__image_thumbnail'),
-                                                                                   my_reaction=F('commenteventreaction__type'), my_report=F('commenteventreport__type'), text_comment=Case(When(is_blocked=True, then=None), default=F('text'), output_field=CharField())).order_by('-id')
+            replies = obj.replies.all().select_related('author', 'event').annotate(author_image=F('author__image_thumbnail'),search_user_id=Value(obj.search_user_id),
+                                                                                   my_reaction=Subquery(subquery_my_reaction), my_report=Subquery(subquery_report_type), text_comment=Case(When(is_blocked=True, then=None), default=F('text'), output_field=CharField())).order_by('-id')
+        
         return CommentEventSerializer(replies, many=True, context={'is_admin': is_admin}).data
 
-        # context=self.context
 
 
 class CommentEventReactionSerializer(serializers.ModelSerializer):
