@@ -30,6 +30,7 @@ import requests
 import base64
 from channels.db import database_sync_to_async
 from ips_config import BACKEND_IP
+from django.template.loader import get_template
 
 
 
@@ -1415,7 +1416,7 @@ class OrderedTicket(models.Model):
     def generate_ticket_pdf(self):
 
         main_image = EventImage.objects.get(event__id=self.ticket.event.id, main=True)
-
+        
         context = {
             'first_name': self.first_name,
             'last_name': self.last_name,
@@ -1430,13 +1431,13 @@ class OrderedTicket(models.Model):
         qr_code_data = self.get_base64_image_data(f'{BACKEND_IP}{self.qr_code.url}')
         event_photo_data = self.get_base64_image_data(f'{BACKEND_IP}{main_image.image.url}')
 
-
         context['qr_code'] = f'data:image/png;base64,{qr_code_data}'
 
         context['event_photo'] = f'data:image/png;base64,{event_photo_data}'
 
+        html_content = get_template('template_ticket.html').render(context)
 
-        return context
+        return html_content
     
     def get_base64_image_data(self, image_url):
         try:

@@ -1262,10 +1262,8 @@ class TicketGeneratePDFView(APIView):
 
                             if not orderedticket.refunded and not orderedticket.ticket.event.to_start_refund:
 
-                                context = orderedticket.generate_ticket_pdf()
+                                html_content = orderedticket.generate_ticket_pdf()
                                 
-                                html_content = get_template('template_ticket.html').render(context)
-
                                 response = HttpResponse(content_type='application/pdf', status=status.HTTP_200_OK)
                                 response['Content-Disposition'] = f'attachment; filename="ticket_{orderedticket.id}.pdf"'
 
